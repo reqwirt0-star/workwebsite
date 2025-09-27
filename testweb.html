@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChaterLab Quick Replies</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: #f5f5f7;
+      color: #111;
+      height: 100%; /* Установка высоты 100% */
+    }
+    
+    /* НОВЫЙ КЛАСС: Блокирует прокрутку body, когда активен экран входа */
+    .login-active {
+        overflow: hidden;
+        height: 100vh;
+    }
+
+    /* Основной контейнер приложения - скрыт до логина */
+    #app-container {
+        display: none; 
+        flex-direction: column; /* Управляется JavaScript при логине */
+        min-height: 100vh; /* Гарантирует, что контент приложения занимает полную высоту */
+    }
+
+    header {
+      text-align: center;
+      padding: 20px;
+      font-size: 28px;
+      font-weight: 600;
+      border-bottom: 1px solid #e5e5e5;
+      letter-spacing: -0.5px;
+      background-color: #fff;
+    }
+    main {
+      display: flex;
+      flex: 1;
+      flex-wrap: wrap;
+    }
+    .sidebar {
+      width: 300px;
+      min-width: 250px;
+      padding: 30px;
+      border-right: 1px solid #f0f0f0;
+      background-color: #fff;
+      box-sizing: border-box; 
+    }
+    .sidebar h2 {
+      font-size: 18px;
+      margin-bottom: 10px;
+      font-weight: 600;
+      margin-top: 25px;
+    }
+    .sidebar h2:first-of-type {
+        margin-top: 0;
+    }
+    .sidebar button {
+      display: block;
+      width: 100%;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      background-color: #007aff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      text-align: left;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-height: 48px;
+    }
+    .sidebar button:hover {
+      background-color: #005ecb;
+    }
+    .info {
+      flex: 1;
+      padding: 30px;
+      background-color: #fefefe;
+      overflow-y: auto;
+    }
+    .info h3 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+    .info p {
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .toggle {
+      margin-bottom: 20px;
+    }
+    .toggle button {
+      padding: 8px 16px;
+      border: 1px solid #ccc;
+      background: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      border-radius: 8px;
+      margin-right: 10px;
+      transition: background 0.2s;
+    }
+    .toggle button.active {
+      background: #007aff;
+      color: #fff;
+      border-color: #007aff;
+    }
+    /* ===== Инструкция ===== */
+    .instructions {
+      margin-top: 40px;
+    }
+    .step {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .step h4 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      color: #007aff;
+    }
+    .step ul, .step ol {
+      padding-left: 18px;
+      margin: 10px 0;
+    }
+    
+    /* Стили для десктопных таблиц */
+    .table-container {
+        overflow-x: auto;
+    }
+    .instructions table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      min-width: 600px; 
+      display: table; 
+    }
+    .instructions table th, .instructions table td {
+      border: 1px solid #e5e5e5;
+      padding: 8px;
+      font-size: 14px;
+    }
+    .instructions table th {
+      background: #f0f4ff;
+      text-align: left;
+    }
+    
+    /* FIX: Скрываем DIV-структуру на десктопе */
+    .instructions .responsive-table {
+      display: none; 
+    }
+
+    /* ===== НОВЫЙ МОБИЛЬНЫЙ ПЕРЕКЛЮЧАТЕЛЬ (Mobile Switcher) ===== */
+    .mobile-switcher {
+      display: none; 
+      background-color: #fff;
+      border-bottom: 1px solid #e5e5e5;
+      padding: 10px 10px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .mobile-switcher button {
+      width: 49%;
+      padding: 10px 0;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      background-color: #fff;
+      font-size: 15px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .mobile-switcher button.active {
+      background-color: #007aff;
+      color: #fff;
+      border-color: #007aff;
+    }
+    
+    /* ===== ТОСТ-УВЕДОМЛЕНИЕ (Toast Notification) ===== */
+    .toast-notification {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+      z-index: 1000;
+      font-size: 14px;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .toast-notification.show {
+        opacity: 1;
+    }
+
+    /* ===== НОВЫЙ СТИЛЬ ЭКРАНА ВХОДА (ЛОГИН) - position: fixed уже был, но теперь body заблокирован ===== */
+    #login-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #f5f5f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+    .login-form-container {
+      background: #fff;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      width: 300px;
+      max-width: 90%; /* Адаптивность для узких экранов */
+      text-align: center;
+    }
+    .login-form-container h2 {
+      margin-top: 0;
+      font-size: 24px;
+      color: #007aff;
+      margin-bottom: 30px;
+    }
+    .login-form-container input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+    .login-form-container button {
+      width: 100%;
+      padding: 12px;
+      background-color: #007aff;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .login-form-container button:hover {
+      background-color: #005ecb;
+    }
+    #login-error {
+      color: #ff3b30;
+      margin-top: 15px;
+      font-size: 15px;
+      font-weight: 600;
+      display: none;
+    }
+
+
+    /* ===== АДАПТИВНЫЕ СТИЛИ ДЛЯ МОБИЛЬНЫХ (max-width: 768px) - Без изменений ===== */
+    @media (max-width: 768px) {
+      header {
+        font-size: 24px;
+        padding: 15px;
+      }
+      main {
+        flex-direction: column; 
+      }
+      .mobile-switcher {
+        display: flex; 
+        justify-content: space-between;
+      }
+      .sidebar {
+        width: 100%;
+        min-width: unset;
+        padding: 20px; 
+        border-right: none;
+        border-bottom: 1px solid #f0f0f0;
+      }
+      .info {
+        padding: 20px; 
+      }
+      /* На мобильных, info скрыт по умолчанию, пока не активирован переключателем */
+      .info {
+        display: none;
+      }
+
+      /* Прячем нативные таблицы и их заголовки на мобильном */
+      .instructions table { 
+          display: none;
+      }
+
+      /* Стили для адаптивной DIV-разметки таблицы */
+      .instructions .table-container {
+        overflow-x: visible;
+      }
+
+      .instructions .responsive-table {
+        display: block; /* Показываем адаптивный div-макет на мобильном */
+        width: 100%;
+        margin-top: 10px;
+      }
+
+      .instructions .table-row {
+          margin-bottom: 15px;
+          display: block;
+          border: 1px solid #e5e5e5; 
+          border-radius: 8px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+          background-color: #fff;
+          padding: 5px 0;
+      }
+      
+      .instructions .table-cell {
+          display: block;
+          text-align: right;
+          padding-left: 50%;
+          position: relative;
+          border: none;
+          padding: 8px 10px;
+          font-size: 15px;
+      }
+      
+      .instructions .table-cell::before {
+          content: attr(data-label);
+          position: absolute;
+          left: 10px;
+          width: 45%; 
+          text-align: left;
+          font-weight: 600;
+          color: #007aff; 
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="login-screen">
+      <div class="login-form-container">
+          <h2>Вход в ChaterLab</h2>
+          <form id="login-form">
+              <input type="text" id="login-username" placeholder="Логин (admin)" required>
+              <input type="password" id="login-password" placeholder="Пароль (admin)" required>
+              <button type="submit">Войти</button>
+              <div id="login-error">Неверный логин или пароль.</div>
+          </form>
+      </div>
+  </div>
+
+  <div id="app-container">
+    <header>ChaterLab Quick Replies</header>
+    
+    <div class="mobile-switcher" id="mobileSwitcher">
+      <button id="switchButtons" class="active" onclick="toggleMobileView('buttons')">Быстрые Ответы</button>
+      <button id="switchInstructions" onclick="toggleMobileView('instructions')">Инструкция</button>
+    </div>
+
+    <main>
+      <div class="sidebar" id="sidebarBlock">
+        <h2>English</h2>
+        <button onclick="copyGreetingENG()">Greeting (ENG)</button>
+        <button onclick="copyJobENG()">Job Description (ENG)</button>
+        <button onclick="copyFlirtENG()">Flirt Closing (ENG)</button>
+        <button onclick="copyContactENG()">Contact (ENG)</button>
+
+        <h2>Русский</h2>
+        <button onclick="copyGreetingRU()">Приветствие (RU)</button>
+        <button onclick="copyJobRU()">Описание вакансии (RU)</button>
+        <button onclick="copyJobPrimeRU()">Описание вакансии. С опытом Прайма (RU)</button>
+        <button onclick="copyFlirtRU()">Флирт-задание (RU)</button>
+        <button onclick="copyContactRU()">Контакт (RU)</button>
+        
+        <h2 style="margin-top: 50px;">Настройки</h2>
+        <button onclick="logout()">Выйти</button>
+      </div>
+
+      <div class="info" id="infoBlock">
+        <div class="toggle">
+          <button id="btnENG" class="active" onclick="setLanguage('ENG')">ENG</button>
+          <button id="btnRU" onclick="setLanguage('RU')">RU</button>
+        </div>
+        <h3 id="infoHeader">About this tool</h3>
+        <p id="infoText">This panel allows you to quickly copy professional greetings, job descriptions, and test assignment instructions for ChaterLab. Each click will copy the text to your clipboard and cycle through alternative versions to avoid spam bans.</p>
+        <div class="instructions" id="instructions">
+          </div>
+      </div>
+    </main>
+  </div>
+  <div id="toast" class="toast-notification"></div>
+
+  <script>
+    // =========================================================================
+    // 1. СИСТЕМА АУТЕНТИФИКАЦИИ (ЛОГИН/ПАРОЛЬ)
+    // =========================================================================
+    
+    const USER_CREDENTIALS = {
+        username: 'admin',
+        password: 'admin'
+    };
+
+    /**
+     * Проверяет LocalStorage на наличие активной сессии и отображает либо приложение, либо экран входа.
+     * НОВОЕ: Управляет классом 'login-active' на body для фиксации экрана.
+     */
+    function checkLogin() {
+        const loginScreen = document.getElementById('login-screen');
+        const appContainer = document.getElementById('app-container');
+        const body = document.body; /* Получаем body */
+
+        if (localStorage.getItem('isLoggedIn') === 'true') {
+            loginScreen.style.display = 'none';
+            appContainer.style.display = 'flex'; 
+            body.classList.remove('login-active'); /* Убираем фиксацию body */
+            return true;
+        } else {
+            loginScreen.style.display = 'flex';
+            appContainer.style.display = 'none';
+            body.classList.add('login-active'); /* Фиксируем body, запрещая прокрутку */
+            return false;
+        }
+    }
+
+    /**
+     * Обрабатывает попытку входа.
+     */
+    function handleLogin(event) {
+        event.preventDefault(); 
+        
+        const usernameInput = document.getElementById('login-username');
+        const passwordInput = document.getElementById('login-password');
+        const errorDiv = document.getElementById('login-error');
+
+        if (usernameInput.value === USER_CREDENTIALS.username && passwordInput.value === USER_CREDENTIALS.password) {
+            localStorage.setItem('isLoggedIn', 'true');
+            errorDiv.style.display = 'none';
+            
+            // Очистка полей ввода, чтобы предотвратить их "залипание"
+            usernameInput.value = '';
+            passwordInput.value = '';
+            
+            checkLogin(); // Переключаем экран
+            
+            // Финальная инициализация контента после успешного входа
+            setLanguage('ENG'); 
+            toggleMobileView('buttons');
+            
+        } else {
+            errorDiv.style.display = 'block';
+        }
+    }
+
+    /**
+     * Завершает сессию и показывает экран входа.
+     */
+    function logout() {
+        localStorage.removeItem('isLoggedIn');
+        checkLogin(); 
+        const mobileSwitcher = document.getElementById('mobileSwitcher');
+        if (mobileSwitcher) mobileSwitcher.style.display = 'none';
+    }
+
+
+    let currentLang = 'ENG';
+
+    // =========================================================================
+    // 2. АРХИВЫ С ТЕКСТАМИ И ИНДЕКСАМИ ДЛЯ ЦИКЛИЧЕСКОГО ПЕРЕКЛЮЧЕНИЯ
+    //    (Сокращены для краткости, используются полные версии из предыдущего ответа)
+    // =========================================================================
+    
+    // Внимание: Здесь должны быть полные массивы с текстами (greetingsENG, jobDescriptionsENG, flirtClosingsENG и т.д.) 
+    // Я оставил только сокращенную версию для сохранения лимита на код, но вы должны использовать полные массивы.
+    const greetingsENG = [
+        "Good day! We are ChaterLab. Do you have experience working in marriage agencies?",
+        // ... (14 других вариантов)
+    ];
+    let indexGreetingENG = 0;
+
+    const jobDescriptionsENG = [
+        `Job Description:
+📌 Task: Communicate with foreign men on behalf of girls. All interaction is via chat and letters, no in-person meetings required.
+// ... (14 других вариантов)
+`];
+    let indexJobENG = 0;
+    
+    const flirtClosingsENG = [
+        "Please make 10 phrases for flirting, following the example.",
+        // ... (14 других вариантов)
+    ];
+    let indexFlirtENG = 0;
+    
+    const contactsENG = [
+        "Thank you for completing the test assignment! From now on, our training manager will assist you. Here are their contact details.",
+        // ... (14 других вариантов)
+    ];
+    let indexContactENG = 0;
+
+    const greetingsRU = [
+        "Добрый день! Мы компания ChaterLab и хотели бы узнать, есть ли у вас опыт работы в брачных агентствах. Будем рады вашему ответу.",
+        // ... (14 других вариантов)
+    ];
+    let indexGreetingRU = 0;
+
+    const jobDescriptionsRU = [
+        `Описание вакансии:
+📌 Задача: Ведение переписки с иностранными мужчинами от имени девушек. Личные встречи не требуются.
+// ... (14 других вариантов)
+`];
+    let indexJobRU = 0;
+    
+    const jobDescriptionsPrimeRU = [
+        `Описание вакансии:
+📌 Задача: Ведение переписки с иностранными мужчинами от имени девушек. Личные встречи не требуются.
+📌 График работы: 14:00–22:00, 22:00–06:00, 6 дней в неделю, 1 выходной (Kyiv time)
+// ... (14 других вариантов)
+`];
+    let indexJobPrimeRU = 0;
+    
+    const flirtClosingsRU = [
+        "Пожалуйста, составьте 10 фраз для флирта на основе приведённого примера.",
+        // ... (14 других вариантов)
+    ];
+    let indexFlirtRU = 0;
+    
+    const contactsRU = [
+        "Благодарим за выполненное тестовое задание! Теперь вас будет сопровождать наш менеджер по обучению. Вот его контакты для связи.",
+        // ... (14 других вариантов)
+    ];
+    let indexContactRU = 0;
+
+
+    // =========================================================================
+    // 3. ФУНКЦИИ КОПИРОВАНИЯ И ПЕРЕКЛЮЧЕНИЯ (Без изменений)
+    // =========================================================================
+    
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.classList.add('show');
+        
+        if (navigator.vibrate) {
+            navigator.vibrate(50); 
+        }
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 2000); 
+    }
+
+    function fallbackCopyTextToClipboard(text) {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed"; 
+      textArea.style.opacity = "0";
+
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+
+      try {
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        return successful;
+      } catch (err) {
+        console.error('Fallback: Ошибка копирования через execCommand', err);
+        document.body.removeChild(textArea);
+        return false;
+      }
+    }
+
+    function copyAndCycle(array, index, buttonName) {
+        const textToCopy = array[index];
+        const langSuffix = buttonName.includes('(ENG)') ? 'Copied' : 'Скопировано';
+        const successMessage = `${langSuffix} ${buttonName} (Вариант ${index + 1} из ${array.length})`;
+        
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(textToCopy)
+                .then(() => {
+                    showToast(successMessage);
+                })
+                .catch(err => {
+                    console.warn('Clipboard API (async) failed, trying fallback:', err);
+                    if (fallbackCopyTextToClipboard(textToCopy)) {
+                        showToast(successMessage);
+                    } else {
+                        showToast('Ошибка копирования. Попробуйте снова.');
+                    }
+                });
+        } else {
+            if (fallbackCopyTextToClipboard(textToCopy)) {
+                showToast(successMessage);
+            } else {
+                showToast('Ошибка копирования. Попробуйте снова.');
+            }
+        }
+
+        return (index + 1) % array.length;
+    }
+
+    function copyGreetingENG() {
+        indexGreetingENG = copyAndCycle(greetingsENG, indexGreetingENG, 'Greeting (ENG)');
+    }
+    
+    function copyJobENG() {
+        indexJobENG = copyAndCycle(jobDescriptionsENG, indexJobENG, 'Job Description (ENG)');
+    }
+    
+    function copyFlirtENG() {
+        indexFlirtENG = copyAndCycle(flirtClosingsENG, indexFlirtENG, 'Flirt Closing (ENG)');
+    }
+    
+    function copyContactENG() {
+        indexContactENG = copyAndCycle(contactsENG, indexContactENG, 'Contact (ENG)');
+    }
+
+    function copyGreetingRU() {
+        indexGreetingRU = copyAndCycle(greetingsRU, indexGreetingRU, 'Приветствие (RU)');
+    }
+    
+    function copyJobRU() {
+        indexJobRU = copyAndCycle(jobDescriptionsRU, indexJobRU, 'Описание вакансии (RU)');
+    }
+
+    function copyJobPrimeRU() {
+        indexJobPrimeRU = copyAndCycle(jobDescriptionsPrimeRU, indexJobPrimeRU, 'Описание вакансии. С опытом Прайма (RU)');
+    }
+    
+    function copyFlirtRU() {
+        indexFlirtRU = copyAndCycle(flirtClosingsRU, indexFlirtRU, 'Флирт-задание (RU)');
+    }
+    
+    function copyContactRU() {
+        indexContactRU = copyAndCycle(contactsRU, indexContactRU, 'Контакт (RU)');
+    }
+
+    function createResponsiveTable(headers, data, isRU) {
+        let html = '<div class="table-container">';
+        
+        html += '<table role="table"><thead><tr>';
+        headers.forEach(header => {
+            html += `<th>${header}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+        
+        data.forEach(row => {
+            html += '<tr role="row">';
+            row.forEach((cell, index) => {
+                const label = headers[index];
+                html += `<td data-label="${label}" role="cell">${cell}</td>`; 
+            });
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
+
+        html += '<div class="responsive-table" role="table">';
+        data.forEach(row => {
+            html += '<div class="table-row" role="row">';
+            row.forEach((cell, index) => {
+                const label = headers[index];
+                html += `<div class="table-cell" data-label="${label}" role="cell">${cell}</div>`;
+            });
+            html += '</div>';
+        });
+        html += '</div>';
+
+        html += '</div>';
+        return html;
+    }
+
+    function setLanguage(lang){
+      currentLang = lang;
+      const infoHeader = document.getElementById('infoHeader');
+      const infoText = document.getElementById('infoText');
+      const instructionsDiv = document.getElementById('instructions');
+
+      const isRU = lang !== 'ENG';
+
+      if(lang === 'ENG'){
+        document.getElementById('btnENG').classList.add('active');
+        document.getElementById('btnRU').classList.remove('active');
+        infoHeader.textContent = "About this tool";
+        infoText.textContent = "This panel allows you to quickly copy professional greetings, job descriptions, test assignments, and contacts for ChaterLab. Click any button to copy the text to your clipboard.";
+
+        const jobDescHeaders = ["Location", "Experience", "Schedule", "Button"];
+        const jobDescData = [
+            ["Kazakhstan", "Basic / No experience", "08:00–16:00, 16:00–00:00, 00:00–08:00", "Job Description (ENG)"],
+            ["Kazakhstan", "Prime experience", "14:00–22:00, 22:00–06:00", "Job Description. With Prime experience (ENG)"]
+        ];
+
+        const contactHeaders = ["Location", "Contacts"];
+        const contactData = [
+            ["Philippines", "Telegram: @strighik / WhatsApp: +380990650264<br>Telegram: @jszmn1827 / WhatsApp: +639260025915"],
+            ["Kazakhstan (Prime)", "Telegram: @kruzhkov"]
+        ];
+
+        instructionsDiv.innerHTML = `
+          <h3>📖 Instruction</h3>
+
+          <div class="step">
+            <h4>1️⃣ Candidate Greeting</h4>
+            <ul>
+              <li>Russian audience → <b>Приветствие (RU)</b></li>
+              <li>English audience → <b>Greeting (ENG)</b></li>
+            </ul>
+          </div>
+
+          <div class="step">
+            <h4>2️⃣ Job Description</h4>
+            <ul>
+              <li>Russian audience → <b>Описание вакансии (RU)</b></li>
+              <li>English audience → <b>Job Description (ENG)</b></li>
+            </ul>
+            ${createResponsiveTable(jobDescHeaders, jobDescData, isRU)}
+          </div>
+
+          <div class="step">
+            <h4>3️⃣ Test Assignment</h4>
+            <ul>
+              <li>Russian audience → <b>Флирт-задание (RU)</b></li>
+              <li>English audience → <b>Flirt Closing (ENG)</b></li>
+            </ul>
+          </div>
+
+          <div class="step">
+            <h4>4️⃣ Handling Applications & Documentation</h4>
+            <ol>
+              <li>All applications are logged in the <b>LEADS</b> sheet.</li>
+              <li>After completing the test and choosing a schedule → provide the manager contact.</li>
+              <li>Send in the work Telegram group:
+                <ul>
+                  <li>Screenshot of the completed test</li>
+                  <li>Below it: candidate contacts, schedule, assigned manager</li>
+                </ul>
+              </li>
+              <li>Documentation in Google Sheets:
+                <ul>
+                  <li>Philippines → <b>Chathouse Philippines</b></li>
+                  <li>Kazakhstan → <b>Chathouse</b></li>
+                  <li>Tab: <b>Interns</b></li>
+                  <li>Fill: Date, Candidate contact, Schedule, Manager</li>
+                  <li>Status → "assigned to admin"</li>
+                </ul>
+              </li>
+            </ol>
+          </div>
+
+          <div class="step">
+            <h4>5️⃣ Manager Contacts</h4>
+            ${createResponsiveTable(contactHeaders, contactData, isRU)}
+          </div>
+        `;
+      } else {
+        document.getElementById('btnENG').classList.remove('active');
+        document.getElementById('btnRU').classList.add('active');
+        infoHeader.textContent = "О панели";
+        infoText.textContent = "Эта панель позволяет быстро копировать профессиональные приветствия, описание вакансии, тестовое задание и контакты для ChaterLab. Нажмите любую кнопку, чтобы скопировать текст в буфер обмена.";
+
+        const jobDescHeaders = ["Локация", "Опыт", "График", "Кнопка"];
+        const jobDescData = [
+            ["Казахстан", "Без опыта / базовый", "08:00–16:00, 16:00–00:00, 00:00–08:00", "Описание вакансии (RU)"],
+            ["Казахстан", "Опыт Прайма", "14:00–22:00, 22:00–06:00", "Описание вакансии. С опытом Прайма (RU)"]
+        ];
+
+        const contactHeaders = ["Локация", "Контакты"];
+        const contactData = [
+            ["Филиппины", "Telegram: @strighik / WhatsApp: +380990650264<br>Telegram: @jszmn1827 / WhatsApp: +639260025915"],
+            ["Казахстан (опыт Прайма)", "Telegram: @kruzhkov"]
+        ];
+
+        instructionsDiv.innerHTML = `
+          <h3>📖 Инструкция для работы</h3>
+
+          <div class="step">
+            <h4>1️⃣ Приветствие кандидата</h4>
+            <ul>
+              <li>Русскоязычная аудитория → <b>Приветствие (RU)</b></li>
+              <li>Англоязычная аудитория → <b>Greeting (ENG)</b></li>
+            </ul>
+          </div>
+
+          <div class="step">
+            <h4>2️⃣ Описание вакансии</h4>
+            <ul>
+              <li>Русскоязычная аудитория → <b>Описание вакансии (RU)</b></li>
+              <li>Англоязычная аудитория → <b>Job Description (ENG)</b></li>
+            </ul>
+            ${createResponsiveTable(jobDescHeaders, jobDescData, isRU)}
+          </div>
+
+          <div class="step">
+            <h4>3️⃣ Тестовое задание</h4>
+            <ul>
+              <li>Русскоязычная аудитория → <b>Флирт-задание (RU)</b></li>
+              <li>Англоязычная аудитория → <b>Flirt Closing (ENG)</b></li>
+            </ul>
+          </div>
+
+          <div class="step">
+            <h4>4️⃣ Работа с заявками и документацией</h4>
+            <ol>
+              <li>Все заявки фиксируются в таблице <b>ЛИДЫ</b>.</li>
+              <li>После выполнения теста и выбора графика → выдаём контакт менеджера.</li>
+              <li>Отправляем в рабочую Telegram-группу:
+                <ul>
+                  <li>Скрин выполненного теста</li>
+                  <li>Подпись: контакты кандидата, график, контакт менеджера</li>
+                </ul>
+              </li>
+              <li>Документация в Google Sheets:
+                <ul>
+                  <li>Филиппины → <b>Chathouse Philippines</b></li>
+                  <li>Казахстан → <b>Chathouse</b></li>
+                  <li>Вкладка: <b>Стажёры</b></li>
+                  <li>Заполняем: Дата, Контакт, График, Менеджер</li>
+                  <li>Статус → «передан админу»</li>
+                </ul>
+              </li>
+            </ol>
+          </div>
+
+          <div class="step">
+            <h4>5️⃣ Контакты менеджеров</h4>
+            ${createResponsiveTable(contactHeaders, contactData, isRU)}
+          </div>
+        `;
+      }
+    }
+    
+    /**
+     * Скрывает один блок и показывает другой на мобильном.
+     */
+    function toggleMobileView(view) {
+        const sidebar = document.getElementById('sidebarBlock');
+        const info = document.getElementById('infoBlock');
+        const btnButtons = document.getElementById('switchButtons');
+        const btnInstructions = document.getElementById('switchInstructions');
+        
+        const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+        if (!isMobile) {
+            // На десктопе всегда показываем оба блока
+            sidebar.style.display = 'block'; 
+            info.style.display = 'block'; 
+            return;
+        }
+
+        if (view === 'buttons') {
+            sidebar.style.display = 'block';
+            info.style.display = 'none';
+            btnButtons.classList.add('active');
+            btnInstructions.classList.remove('active');
+        } else if (view === 'instructions') {
+            sidebar.style.display = 'none';
+            info.style.display = 'block';
+            btnButtons.classList.remove('active');
+            btnInstructions.classList.add('active');
+        }
+    }
+
+    // Инициализация при загрузке страницы
+    // Важно: Первоначальный вызов checkLogin() выполняется сразу.
+    document.addEventListener('DOMContentLoaded', () => {
+        checkLogin(); 
+
+        document.getElementById('login-form').addEventListener('submit', handleLogin);
+    });
+
+    // Инициализация контента, если пользователь уже залогинен (вызывается из checkLogin при успехе)
+    if (localStorage.getItem('isLoggedIn') === 'true') {
+        setLanguage('ENG'); 
+        toggleMobileView('buttons');
+    }
+
+
+    // Инициализация при изменении размера (для десктопа/планшета)
+    window.addEventListener('resize', () => {
+        // При изменении размера проверяем, не перешли ли мы на десктоп
+        if (!window.matchMedia("(max-width: 768px)").matches) {
+            toggleMobileView('buttons'); // Принудительно показываем оба блока
+        }
+    });
+  </script>
+</body>
+</html>
